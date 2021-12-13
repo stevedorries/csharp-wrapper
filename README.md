@@ -43,5 +43,4 @@ SimplyCast.ContactManager.Responses.ContactCollection contacts =
 	
 <h2>Licensing</h2>
 	
-<p>This software is distributed under the MIT licence. Please see the attached 
-file called LICENCE.txt.</p>
+<p>This software is distributed under the MIT licence. Please see the attached LICENCE</p>

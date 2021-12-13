@@ -55,7 +55,7 @@ namespace SimplyCast
         /// Contact manager API resource container.
         /// </summary>
         public ContactManagerAPI ContactManager { 
-            get { return this.contactManager; }
+            get { return contactManager; }
         }
 
         /// <summary>
@@ -74,14 +74,14 @@ namespace SimplyCast
         /// <param name="secretKey">The desired account API secret key.</param>
         public SimplyCastAPI(string publicKey, string secretKey)
         {
-            this.connection = new SimplyCastAPIConnector(publicKey, secretKey);
-            this.contactManager = new ContactManagerAPI(connection);
-            this.simplycast360 = new SimplyCast360API(connection);
+            connection = new SimplyCastAPIConnector(publicKey, secretKey);
+            contactManager = new ContactManagerAPI(connection);
+            simplycast360 = new SimplyCast360API(connection);
         }
 
         public void setURL(string url)
         {
-            this.connection.URL = url;
+            connection.URL = url;
         }
     }
 }

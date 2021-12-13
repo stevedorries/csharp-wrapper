@@ -16,7 +16,7 @@ namespace SimplyCast
     class APIException : Exception
     {
         private HttpStatusCode code;
-        private string status;
+        private string status = "";
 
         /// <summary>
         /// APIExceptions are thrown when a 400 or 500 series error is 

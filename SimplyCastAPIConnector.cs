@@ -1,18 +1,15 @@
 ﻿//----------------------------------------------------------------
 // SimplyCastAPIConnector.cs
-// Copyright SimplyCast 2014
+// Copyright SimplyCast 2014, Steve Dorries 2021
 // This projected is licensed under the terms of the MIT license.
-//  (see the attached LICENSE.txt).
+//  (see the attached LICENSE file).
 //----------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Xml.Serialization;
-using System.IO;
+using System.Text.Json;
 using System.Net;
 using SimplyCast.Common.Responses;
+using System.Net.Http.Headers;
 
 namespace SimplyCast
 {
@@ -26,23 +23,28 @@ namespace SimplyCast
         /// <summary>
         /// The public key, used to identify the user.
         /// </summary>
-        private string publicKey;
+        private readonly string publicKey;
 
         /// <summary>
         /// The secret key, used in generating signatures.
         /// </summary>
-        private string secretKey;
+        private readonly string secretKey;
 
         /// <summary>
         /// API URL, sans the resource endpoint.
         /// </summary>
         private string apiURL = "https://api.simplycast.com/";
+        private readonly HttpClient webClient;
         #endregion
 
         public string URL
         {
-            get { return this.apiURL; }
-            set { this.apiURL = value; }
+            get { return apiURL; }
+            set
+            {
+                apiURL = value;
+                webClient.BaseAddress = new(apiURL);
+            }
         }
 
         /// <summary>
@@ -56,6 +58,7 @@ namespace SimplyCast
             this.secretKey = secretKey;
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            webClient = new HttpClient();
         }
 
         #region Utility Functions
@@ -64,127 +67,183 @@ namespace SimplyCast
         /// </summary>
         /// <typeparam name="T">The entity response return type.</typeparam>
         /// <param name="method">The HTTP method (GET, POST, etc).</param>
-        /// <param name="resource">The API resource (the part of the URL 
-        /// between the base URL and the query parameters.</param>
-        /// <param name="queryParameters">A dictionary of request query 
-        /// parameters.</param>
-        /// <param name="requestBody">A serializable object containing the
-        /// rquest body.</param>
+        /// <param name="resource">The API resource (the part of the URL between the base URL and the query parameters.</param>
+        /// <param name="queryParameters">A dictionary of request query parameters.</param>
+        /// <param name="requestBody">A serializable object containing the request body.</param>
         /// <returns>A response entity.</returns>
-        public T Call<T>(string method, string resource, Dictionary<string, string> queryParameters, object requestBody)
+        public T? Call<T>(string method, string resource, Dictionary<string, string>? queryParameters, object? requestBody)
         {
-            string requestBodyString = "";
-            if (requestBody == null)
+            StringContent data;
+            string requestBodyHash = "";
+            string url = apiURL.Trim('/') + '/' + resource.Trim('/');
+            if (queryParameters != null && queryParameters.Count > 0)
             {
-                requestBodyString = "";
+                url += "?";
+                foreach (KeyValuePair<string, string> q in queryParameters)
+                {
+                    url += Uri.EscapeDataString(q.Key) + "=" + Uri.EscapeDataString(q.Value) + "&";
+                }
+                url = url.TrimEnd('&');
             }
-            else
+            HttpMethod _method = HttpMethod.Get;
+            switch (method)
             {
-                requestBodyString = this._Serialize(requestBody);
+                case SimplyCastAPI.GET: _method = HttpMethod.Get; break;
+                case SimplyCastAPI.POST: _method = HttpMethod.Post; break;
+                case SimplyCastAPI.DELETE: _method = HttpMethod.Delete; break;
+            }
+            HttpRequestMessage req = new(_method, url);
+
+            if (requestBody != null)
+            {
+                var requestBodyString = JsonSerializer.Serialize(requestBody);
+                data = new StringContent(requestBodyString, Encoding.UTF8, "application/json");
+                req.Content = data;
+                requestBodyHash = Convert.ToBase64String(
+                    Encoding.UTF8.GetBytes(BytesToHex(System.Security.Cryptography.MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(requestBodyString.Trim()))))
+                );
+                var bodyHashBytes = Encoding.UTF8.GetBytes(requestBodyHash);
+                req.Content.Headers.ContentMD5 = bodyHashBytes;
             }
 
             string date = DateTime.UtcNow.ToString("r");
 
-            string requestBodyHash = "";
-            if (requestBodyString.Length > 0)
-            {
-                requestBodyHash = System.Convert.ToBase64String(Encoding.UTF8.GetBytes(SimplyCastAPIConnector.BytesToHex(System.Security.Cryptography.MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(requestBodyString.Trim())))));
-            }
+            string token = GenerateAuthToken(method, resource, date, requestBodyHash);
 
-            string authHeader = this._GenerateAuthHeader(method, resource, date, requestBodyHash);
+            req.Headers.Authorization = new AuthenticationHeaderValue("HMAC", token);
+            req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            req.Headers.Add("X-Date", date);
 
-            string url = this.apiURL.Trim('/') + '/' + resource.Trim('/');
-            if (queryParameters != null && queryParameters.Count > 0)
-            {
-                url = url + "?";
-                foreach (KeyValuePair<string, string> q in queryParameters)
-                {
-                    url += System.Uri.EscapeDataString(q.Key) + "=" + System.Uri.EscapeDataString(q.Value) + "&";
-                }
-                url = url.TrimEnd('&');
-            }
 
-            HttpWebRequest webHandle = (HttpWebRequest)WebRequest.Create(url);
-            webHandle.Method = method;
-            webHandle.Headers.Add("X-Date", date);
-            webHandle.Accept ="application/xml";
-            webHandle.Headers.Add(authHeader);
+            HttpResponseMessage? resp = webClient.Send(req);
+            Stream? jsonStream = resp.Content.ReadAsStream();
 
-            if (requestBodyString.Length > 0)
-            {
-                int contentLength = Encoding.UTF8.GetBytes(requestBodyString).Length;
-                webHandle.ContentType = "application/xml";
-                webHandle.ContentLength = contentLength;
-                webHandle.Headers.Add("Content-MD5",requestBodyHash);
-                Stream requestStream = webHandle.GetRequestStream();
-                requestStream.Write(Encoding.UTF8.GetBytes(requestBodyString), 0, contentLength);
-                requestStream.Close();
-            }
-
-            HttpWebResponse webResponse;
-            try
-            {
-                webResponse = (HttpWebResponse)webHandle.GetResponse();
-            }
-            catch (WebException e)
-            {
-                if (e.Response != null)
-                {
-                    webResponse = (HttpWebResponse)e.Response;
-                } else
-                {
-                    throw e;
-                }
-            }
-
-            Stream receiveStream = webResponse.GetResponseStream();
-            StreamReader readStream = new StreamReader(receiveStream, Encoding.UTF8);
-            string responseData = readStream.ReadToEnd();
-            readStream.Close();
-            receiveStream.Close();
-
-            if ((int) webResponse.StatusCode >= 400)
+            if (resp.StatusCode >= HttpStatusCode.BadRequest)
             {
                 APIException exception;
                 try
                 {
-                    Error error = this._Deserialize<Error>(responseData);
-                    exception = new APIException(error.Message);
-                    exception.StatusCode = webResponse.StatusCode;
-                    exception.StatusDescription = webResponse.StatusDescription;
+                    Error? error = JsonSerializer.Deserialize<Error>(jsonStream);
+                    exception = new APIException(error?.Message ?? "")
+                    {
+                        StatusCode = resp.StatusCode,
+                        StatusDescription = resp.ReasonPhrase ?? ""
+                    };
                 }
                 catch (Exception e)
                 {
-                    exception = new APIException("An error condition occurred from the API, but could not be deserialized.", e);
-                    exception.StatusCode = webResponse.StatusCode;
-                    exception.StatusDescription = webResponse.StatusDescription; 
+                    exception = new APIException("An error condition occurred from the API, but could not be deserialized.", e)
+                    {
+                        StatusCode = resp.StatusCode,
+                        StatusDescription = resp.ReasonPhrase ?? ""
+                    };
                 }
                 throw exception;
             }
-            else if (webResponse.StatusCode == HttpStatusCode.NoContent) {
-                return default(T);
+            else if (resp.StatusCode == HttpStatusCode.NoContent)
+            {
+                return default;
             }
 
-            //Bypass the serializer if the caller wants to handle it itself.
-            if (typeof(T) == typeof(string))
-            {
-                return (T)Convert.ChangeType(responseData, typeof(T));
-            }
-            else
-            {
-                return (T)this._Deserialize<T>(responseData);
-            }
+
+
+            var ret = JsonSerializer.Deserialize<T>(jsonStream);
+            return ret;
         }
 
-        private string _GenerateAuthHeader(string method, string resource, string date, string requestBodyHash)
+        public async Task<T?> CallAsync<T, U>(string method, string resource, Dictionary<string, string>? queryParameters, U? requestBody)
+        {
+            StringContent data;
+            string requestBodyHash = "";
+            string url = apiURL.Trim('/') + '/' + resource.Trim('/');
+            if (queryParameters != null && queryParameters.Count > 0)
+            {
+                url += "?";
+                foreach (KeyValuePair<string, string> q in queryParameters)
+                {
+                    url += Uri.EscapeDataString(q.Key) + "=" + Uri.EscapeDataString(q.Value) + "&";
+                }
+                url = url.TrimEnd('&');
+            }
+            HttpMethod _method = HttpMethod.Get;
+            switch (method)
+            {
+                case SimplyCastAPI.GET: _method = HttpMethod.Get; break;
+                case SimplyCastAPI.POST: _method = HttpMethod.Post; break;
+                case SimplyCastAPI.DELETE: _method = HttpMethod.Delete; break;
+            }
+            HttpRequestMessage req = new(_method, url);
+
+            if (requestBody != null)
+            {
+                var requestBodyString = JsonSerializer.Serialize(requestBody);
+                data = new StringContent(requestBodyString, Encoding.UTF8, "application/json");
+                req.Content = data;
+                requestBodyHash = Convert.ToBase64String(
+                    Encoding.UTF8.GetBytes(BytesToHex(System.Security.Cryptography.MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(requestBodyString.Trim()))))
+                );
+                var bodyHashBytes = Encoding.UTF8.GetBytes(requestBodyHash);
+                req.Content.Headers.ContentMD5 = bodyHashBytes;
+            }
+
+            string date = DateTime.UtcNow.ToString("r");
+
+            string token = GenerateAuthToken(method, resource, date, requestBodyHash);
+
+            req.Headers.Authorization = new AuthenticationHeaderValue("HMAC", token);
+            req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            req.Headers.Add("X-Date", date);
+
+
+            HttpResponseMessage? resp = await webClient.SendAsync(req);
+            Stream? jsonStream = await resp.Content.ReadAsStreamAsync();
+
+            if (resp.StatusCode >= HttpStatusCode.BadRequest)
+            {
+                APIException exception;
+                try
+                {
+                    Error? error = JsonSerializer.Deserialize<Error>(jsonStream);
+                    exception = new APIException(error?.Message ?? "")
+                    {
+                        StatusCode = resp.StatusCode,
+                        StatusDescription = resp.ReasonPhrase ?? ""
+                    };
+                }
+                catch (Exception e)
+                {
+                    exception = new APIException("An error condition occurred from the API, but could not be deserialized.", e)
+                    {
+                        StatusCode = resp.StatusCode,
+                        StatusDescription = resp.ReasonPhrase ?? ""
+                    };
+                }
+                throw exception;
+            }
+            else if (resp.StatusCode == HttpStatusCode.NoContent)
+            {
+                return default;
+            }
+
+
+
+            var ret = await JsonSerializer.DeserializeAsync<T>(jsonStream);
+            return ret;
+        }
+
+        private string GenerateAuthToken(string method, string resource, string date, string requestBodyHash)
         {
             string signature = (method + "\n" + date + "\n" + resource + "\n" + requestBodyHash).Trim();
 
-            System.Security.Cryptography.HMACSHA1 hmac = new System.Security.Cryptography.HMACSHA1();
-            hmac.Key = Encoding.UTF8.GetBytes(this.secretKey);
+            System.Security.Cryptography.HMACSHA1 hmac = new()
+            {
+                Key = Encoding.UTF8.GetBytes(secretKey)
+            };
 
-            string authStr = this.publicKey + ':' + SimplyCastAPIConnector.BytesToHex(hmac.ComputeHash(Encoding.UTF8.GetBytes(signature)));
-            return "Authorization: HMAC " + System.Convert.ToBase64String(Encoding.UTF8.GetBytes(authStr));
+            var hmSig = hmac.ComputeHash(Encoding.UTF8.GetBytes(signature));
+
+            string authStr = $"{publicKey}:{BytesToHex(hmSig)}";
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes(authStr));
         }
 
         /// <summary>
@@ -202,36 +261,6 @@ namespace SimplyCast
             return str;
         }
 
-        private T _Deserialize<T>(string xml)
-        {
-            T obj = default(T);
-
-            XmlSerializer serializer = new XmlSerializer(typeof(T));
-            using (TextReader reader = new StringReader(xml))
-            {
-                 obj = (T)serializer.Deserialize(reader);
-            }
-
-            return obj;
-        }
-
-        private string _Serialize(object serializableObject)
-        {
-            string serialized = "";
-
-            XmlSerializerNamespaces ns = new XmlSerializerNamespaces();
-            ns.Add("", "");
-            XmlSerializer serializer = new XmlSerializer(serializableObject.GetType());
-
-            using (MemoryStream stream = new MemoryStream())
-            using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
-            {
-                serializer.Serialize(writer, serializableObject, ns);
-                serialized = Encoding.UTF8.GetString(stream.ToArray());
-            } 
-
-            return serialized;
-        }
         #endregion
     }
 }

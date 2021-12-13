@@ -627,6 +627,16 @@ namespace SimplyCast.ContactManager
             this.connection.Call<object>("DELETE", "contactmanager/contacts/" + contactID, null, null);
         }
 
+        /// <summary>
+        /// Permanently delete a contact from the system (and all lists).
+        /// </summary>
+        /// <param name="contactID">The ID of the contact to delete.</param>
+        /// <returns>Returns true on success and false on failure.</returns>
+        public async void DeleteContactAsync(int contactID)
+        {
+            await this.connection.CallAsync<object, object>("DELETE", "contactmanager/contacts/" + contactID, null, null);
+        }
+
         #region GetContactMetadata
         /// <summary>
         /// Get all metadata fields for the specified contact.
@@ -927,9 +937,11 @@ namespace SimplyCast.ContactManager
         /// <returns>A collection of column representations.</returns>
         public Responses.ColumnCollection GetColumns(int offset, int limit)
         {
-            Dictionary<string, string> queryParameters = new Dictionary<string, string>();
-            queryParameters.Add("offset", offset.ToString());
-            queryParameters.Add("limit", limit.ToString());
+            Dictionary<string, string> queryParameters = new()
+            {
+                { "offset", offset.ToString() },
+                { "limit", limit.ToString() }
+            };
 
             return this.connection.Call<Responses.ColumnCollection>("GET", "contactmanager/columns", queryParameters, null);
         }
