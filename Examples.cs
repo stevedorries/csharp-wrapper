@@ -35,7 +35,7 @@ namespace SimplyCast
         public void ListManagementExample()
         {
             //Create a new list.
-            ContactManager.Responses.ListEntity list = api.ContactManager.CreateList("My new list");
+            ContactManager.Responses.ContactList list = api.ContactManager.CreateList("My new list");
 
             Console.WriteLine("Created list " + list.ID);
 
@@ -99,7 +99,7 @@ namespace SimplyCast
         /// </summary>
         public void ContactManagementExample()
         {
-            ContactManager.Responses.ListEntity list;
+            ContactManager.Responses.ContactList list;
 
             //Create a testing list.
             try
@@ -166,9 +166,9 @@ namespace SimplyCast
 
             //Output each list that the contact belongs to (should only be our
             //test list).
-            foreach (ContactManager.Responses.ListEntity l in contact.Lists)
+            foreach (var l in contact.Lists)
             {
-                Console.WriteLine("\tContact belongs to list " + l.ID);
+                Console.WriteLine("\tContact belongs to list " + l.Value.ID);
             }
 
 
@@ -204,7 +204,7 @@ namespace SimplyCast
             //Refresh the contact and see if it still belongs to the list.
             contact = api.ContactManager.GetContact(contact.ID);
 
-            Console.WriteLine("Contact belongs to " + contact.Lists.Length + " lists");
+            Console.WriteLine("Contact belongs to " + contact.Lists.Count + " lists");
 
 
             api.ContactManager.DeleteContact(contact.ID);
@@ -446,12 +446,12 @@ namespace SimplyCast
 
             int listID = 0;
 
-            if (contact.Lists.Length == 0)
+            if (contact.Lists.Count == 0)
             {
                 throw new Exception("The test contact must belong to at least one list.");
             }
 
-            listID = contact.Lists[0].ID;
+            // listID = contact.Lists["0"].ID;
 
             api.SimplyCast360.PushContact(projectID, inboundConnectionID, listID, contactID);
 

@@ -130,9 +130,9 @@ namespace SimplyCast.ContactManager
         /// </summary>
         /// <returns>A ListCollection of the first hundred lists on the 
         /// account.</returns>
-        public Responses.ListCollection GetLists()
+        public Responses.ListCollection? GetLists()
         {
-            return this.GetLists(0, 100, "");
+            return GetLists(0, 100, "");
         }
 
         /// <summary>
@@ -142,9 +142,9 @@ namespace SimplyCast.ContactManager
         /// retrieving from.</param>
         /// <param name="limit">The number of lists to return.</param>
         /// <returns>A ListCollection object of lists.</returns>
-        public Responses.ListCollection GetLists(int offset, int limit)
+        public Responses.ListCollection? GetLists(int offset, int limit)
         {
-            return this.GetLists(offset, limit, "");
+            return GetLists(offset, limit, "");
         }
 
         /// <summary>
@@ -159,17 +159,19 @@ namespace SimplyCast.ContactManager
         /// More details on what values can be queried upon are available 
         /// in the API reference docs.</param>
         /// <returns>A ListCollection of lists.</returns>
-        public Responses.ListCollection GetLists(int offset, int limit, string listName)
+        public Responses.ListCollection? GetLists(int offset, int limit, string listName)
         {
-            Dictionary<string, string> queryParams = new Dictionary<string, string>(3);
-            queryParams.Add("offset", offset.ToString());
-            queryParams.Add("limit", limit.ToString());
+            Dictionary<string, string> queryParams = new(3)
+            {
+                { "offset", offset.ToString() },
+                { "limit", limit.ToString() }
+            };
 
             if (listName.Length > 0) {
                 queryParams.Add("listName", listName);
             }
 
-            return this.connection.Call<Responses.ListCollection>(SimplyCastAPI.GET, "contactmanager/lists", queryParams, null);
+            return connection.Call<Responses.ListCollection>(SimplyCastAPI.GET, "contactmanager/lists", queryParams, null);
         }
 
         #endregion
@@ -179,11 +181,13 @@ namespace SimplyCast.ContactManager
         /// </summary>
         /// <param name="listName">The name of the new list.</param>
         /// <returns>A ListEntity representation of the new list.</returns>
-        public Responses.ListEntity CreateList(string listName)
+        public Responses.ContactList? CreateList(string listName)
         {
-            Requests.ListEntity list = new Requests.ListEntity();
-            list.Name = listName;
-            return this.connection.Call<Responses.ListEntity>(SimplyCastAPI.POST, "contactmanager/lists", null, list);
+            Requests.ListEntity list = new()
+            {
+                Name = listName
+            };
+            return connection.Call<Responses.ContactList>(SimplyCastAPI.POST, "contactmanager/lists", null, list);
         }
 
         /// <summary>
@@ -191,9 +195,9 @@ namespace SimplyCast.ContactManager
         /// </summary>
         /// <param name="listID">The ID of the list to retrieve.</param>
         /// <returns>A ListEntity of the retrieved contact list.</returns>
-        public Responses.ListEntity GetList(int listID)
+        public Responses.ContactList? GetList(int listID)
         {
-            return this.connection.Call<Responses.ListEntity>(SimplyCastAPI.GET, "contactmanager/lists/" + listID, null, null);
+            return connection.Call<Responses.ContactList>(SimplyCastAPI.GET, "contactmanager/lists/" + listID, null, null);
         }
 
         /// <summary>
@@ -204,9 +208,9 @@ namespace SimplyCast.ContactManager
         /// </summary>
         /// <param name="name">The name of the list to retrieve.</param>
         /// <returns>A ListCollection of matching contact lists.</returns>
-        public Responses.ListCollection GetListsByName(string name)
+        public Responses.ListCollection? GetListsByName(string name)
         {
-            return this.GetLists(0, 100, name);
+            return GetLists(0, 100, name);
         }
 
         /// <summary>
@@ -218,11 +222,13 @@ namespace SimplyCast.ContactManager
         /// <param name="name">The new name of the list.</param>
         /// <returns>A ListEntity with the updated contact list
         /// representation.</returns>
-        public Responses.ListEntity RenameList(int listID, string name)
+        public Responses.ContactList? RenameList(int listID, string name)
         {
-            Requests.ListEntity list = new Requests.ListEntity();
-            list.Name = name;
-            return this.connection.Call<Responses.ListEntity>(SimplyCastAPI.POST, "contactmanager/lists/" + listID, null, list);
+            Requests.ListEntity list = new()
+            {
+                Name = name
+            };
+            return connection.Call<Responses.ContactList>(SimplyCastAPI.POST, "contactmanager/lists/" + listID, null, list);
         }
 
         /// <summary>
@@ -922,9 +928,9 @@ namespace SimplyCast.ContactManager
         /// Retrieve a collection of columns.
         /// </summary>
         /// <returns>A collection of column representations.</returns>
-        public Responses.ColumnCollection GetColumns()
+        public Responses.ColumnCollection? GetColumns()
         {
-            return this.GetColumns(0, 100);
+            return GetColumns(0, 100);
         }
 
         /// <summary>
@@ -935,7 +941,7 @@ namespace SimplyCast.ContactManager
         /// <param name="limit">The number of entries to retrieve past the 
         /// offset.</param>
         /// <returns>A collection of column representations.</returns>
-        public Responses.ColumnCollection GetColumns(int offset, int limit)
+        public Responses.ColumnCollection? GetColumns(int offset, int limit)
         {
             Dictionary<string, string> queryParameters = new()
             {
@@ -943,7 +949,7 @@ namespace SimplyCast.ContactManager
                 { "limit", limit.ToString() }
             };
 
-            return this.connection.Call<Responses.ColumnCollection>("GET", "contactmanager/columns", queryParameters, null);
+            return connection.Call<Responses.ColumnCollection>("GET", "contactmanager/columns", queryParameters, null);
         }
         #endregion
 
@@ -954,11 +960,13 @@ namespace SimplyCast.ContactManager
         /// </summary>
         /// <param name="name">The column name to search for.</param>
         /// <returns>A collection of one or more matching columns.</returns>
-        public Responses.ColumnCollection GetColumnsByName(string name)
+        public Responses.ColumnCollection? GetColumnsByName(string name)
         {
-            Dictionary<string, string> queryParameters = new Dictionary<string, string>();
-            queryParameters.Add("query", "`name` = '" + name + "'");
-            return this.connection.Call<Responses.ColumnCollection>("GET", "contactmanager/columns", queryParameters, null);
+            Dictionary<string, string> queryParameters = new()
+            {
+                { "query", "`name` = '" + name + "'" }
+            };
+            return connection.Call<Responses.ColumnCollection>("GET", "contactmanager/columns", queryParameters, null);
         }
 
 
