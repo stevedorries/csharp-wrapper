@@ -10,6 +10,8 @@ using System.Text.Json;
 using System.Net;
 using SimplyCast.Common.Responses;
 using System.Net.Http.Headers;
+using System.Web;
+using System.Text.Json.Serialization;
 
 namespace SimplyCast
 {
@@ -58,8 +60,12 @@ namespace SimplyCast
             this.secretKey = secretKey;
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            webClient = new HttpClient();
+            webClient = new HttpClient
+            {
+                BaseAddress = new(URL)
+            };
         }
+
 
         #region Utility Functions
         /// <summary>
@@ -78,12 +84,21 @@ namespace SimplyCast
             string url = apiURL.Trim('/') + '/' + resource.Trim('/');
             if (queryParameters != null && queryParameters.Count > 0)
             {
-                url += "?";
+                UriBuilder? builder = new(url)
+                {
+                    Port = -1
+                };
+                var query = HttpUtility.ParseQueryString(builder.Query);
+
+                // url += "?";
                 foreach (KeyValuePair<string, string> q in queryParameters)
                 {
-                    url += Uri.EscapeDataString(q.Key) + "=" + Uri.EscapeDataString(q.Value) + "&";
+                    query[q.Key] = q.Value;
+                    // url += Uri.EscapeDataString(q.Key) + "=" + Uri.EscapeDataString(q.Value) + "&";
                 }
-                url = url.TrimEnd('&');
+                builder.Query = query.ToString();
+                url = builder.ToString();
+                // url = url.TrimEnd('&');
             }
             HttpMethod _method = HttpMethod.Get;
             switch (method)
@@ -107,7 +122,6 @@ namespace SimplyCast
             }
 
             string date = DateTime.UtcNow.ToString("r");
-
             string token = GenerateAuthToken(method, resource, date, requestBodyHash);
 
             req.Headers.Authorization = new AuthenticationHeaderValue("HMAC", token);
@@ -145,9 +159,15 @@ namespace SimplyCast
                 return default;
             }
 
-
-
-            var ret = JsonSerializer.Deserialize<T>(jsonStream);
+            var jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                NumberHandling = JsonNumberHandling.AllowReadingFromString
+            };
+            
+            //var reader = new StreamReader(jsonStream);
+            //var jsonString = reader.ReadToEnd();
+            var ret = JsonSerializer.Deserialize<T>(jsonStream,jsonSerializerOptions);
             return ret;
         }
 
