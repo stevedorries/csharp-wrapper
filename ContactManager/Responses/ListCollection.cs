@@ -21,13 +21,13 @@ namespace SimplyCast.ContactManager.Responses
     [XmlRoot(ElementName = "lists")]
     public class ListCollection : GenericCollection
     {
-        private ListEntity[] lists;
+        private ContactList[] lists;
 
         /// <summary>
         /// An collection of contact list entities.
         /// </summary>
         [XmlElement("list")]
-        public ListEntity[] Lists
+        public ContactList[] Lists
         {
             get { return this.lists; }
             set { this.lists = value; }

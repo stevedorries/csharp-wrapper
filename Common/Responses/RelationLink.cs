@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Xml.Serialization;
 
 namespace SimplyCast.Common.Responses
@@ -17,7 +18,7 @@ namespace SimplyCast.Common.Responses
     /// This class represents a relation link. Relation links assist in 
     /// navigating through API resources.
     /// </summary>
-    [XmlRoot(ElementName = "link")]
+
     public class RelationLink
     {
         #region Private Members
@@ -28,7 +29,7 @@ namespace SimplyCast.Common.Responses
         /// <summary>
         /// The type of relation (self referencing, next/previous page, etc).
         /// </summary>
-        [XmlAttribute("rel")]
+        [JsonPropertyName("rel")]
         public string Rel
         {
             get { return this.rel; }
@@ -38,7 +39,7 @@ namespace SimplyCast.Common.Responses
         /// <summary>
         /// The destination resource of the relation.
         /// </summary>
-        [XmlAttribute("href")]
+        [JsonPropertyName("href")]
         public string URL
         {
             get { return this.url; }

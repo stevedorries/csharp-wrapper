@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Xml.Serialization;
 using SimplyCast.Common.Responses;
 
@@ -18,7 +19,6 @@ namespace SimplyCast.ContactManager.Responses
     /// This class contains a collection of column entity representations and
     /// supports XML serialization.
     /// </summary>
-    [XmlRoot(ElementName = "columns")]
     public class ColumnCollection : GenericCollection
     {
         private ColumnEntity[] columns;
@@ -26,7 +26,7 @@ namespace SimplyCast.ContactManager.Responses
         /// <summary>
         /// A collection of column entity representations.
         /// </summary>
-        [XmlElement("column")]
+        [JsonPropertyName("columns")]
         public ColumnEntity[] Columns 
         {
             get { return this.columns; }

@@ -9,7 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Xml.Serialization;
+using System.Text.Json.Serialization;
 
 namespace SimplyCast.Common.Responses
 {
@@ -19,22 +19,14 @@ namespace SimplyCast.Common.Responses
     /// </summary>
     abstract public class GenericCollection
     {
-        #region Private Members
-        private int totalCount;
-        private int filterCount;
-        private int responseCount;
-        private RelationLink[] links;
-        #endregion
-
         /// <summary>
         /// Total count represents the total number of entities available on
         /// the resource before filtering.
         /// </summary>
-        [XmlAttribute("totalCount")]
+        [JsonPropertyName("totalCount")]
         public int TotalCount
         {
-            get { return this.totalCount; }
-            set { this.totalCount = value; }
+            get;set;
         }
 
         /// <summary>
@@ -42,22 +34,20 @@ namespace SimplyCast.Common.Responses
         /// the resource after any filtering queries (excluding offset/limit)
         /// are applied.
         /// </summary>
-        [XmlAttribute("filterCount")]
+        [JsonPropertyName("filterCount")]
         public int FilterCount
         {
-            get { return this.filterCount; }
-            set { this.filterCount = value; }
+            get;set;
         }
 
         /// <summary>
         /// Response count is the number of entities returned in the response, 
         /// provided as a convenience.
         /// </summary>
-        [XmlAttribute("responseCount")]
+        [JsonPropertyName("responseCount")]
         public int ResponseCount
         {
-            get { return this.responseCount; }
-            set { this.responseCount = value; }
+            get;set;
         }
 
         /// <summary>
@@ -65,12 +55,10 @@ namespace SimplyCast.Common.Responses
         /// links will contain the appropriate query parameters for retrieving
         /// the next and previous pages.
         /// </summary>
-        [XmlArray("links")]
-        [XmlArrayItem("link")]
+        [JsonPropertyName("links")]
         public RelationLink[] Links
         {
-            get { return this.links; }
-            set { this.links = value; }
+            get;set;
         }
     }
 }

@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Xml.Serialization;
 using SimplyCast.Common.Responses;
 
@@ -22,44 +23,32 @@ namespace SimplyCast.ContactManager.Responses
     [XmlRoot(ElementName = "contact")]
     public class ContactEntity
     {
-        #region Private Members
-        private int id;
-        private DateTime created;
-        private DateTime modified;
-        private FieldEntity[] fields;
-        private ListEntity[] lists;
-        private RelationLink[] links;
-        #endregion
-
         /// <summary>
         /// The internal identifier of the contact. Can be used to reference
         /// the contact directly.
         /// </summary>
-        [XmlAttribute("id")]
+        [JsonPropertyName("id")]
         public int ID
         {
-            get { return this.id; }
-            set { this.id = value; }
+            get; set;
         }
 
         /// <summary>
         /// The date that the contact entry was created.
         /// </summary>
-        [XmlAttribute("created", DataType = "dateTime")]
+        [JsonPropertyName("created")]
         public DateTime Created
         {
-            get { return this.created; }
-            set { this.created = value; }
+            get; set;
         }
 
         /// <summary>
         /// The date that the contact entry was last modified.
         /// </summary>
-        [XmlAttribute("modified", DataType = "dateTime")]
+        [JsonPropertyName("modified")]
         public DateTime Modified
         {
-            get { return this.modified; }
-            set { this.modified = value; }
+            get; set;
         }
 
         /// <summary>
@@ -67,35 +56,32 @@ namespace SimplyCast.ContactManager.Responses
         /// 
         /// a single field entry (email, for example).
         /// </summary>
-        [XmlArray("fields")]
-        [XmlArrayItem("field")]
-        public FieldEntity[] Fields
+        [JsonPropertyName("fields")]
+        public Dictionary<int, FieldEntity>? Fields
         {
-            get { return this.fields; }
-            set { this.fields = value; }
+            get; set;
         }
 
         /// <summary>
         /// An array of list entities. Each list entity represents a list that
         /// the contact appears on.
         /// </summary>
-        [XmlArray("lists")]
-        [XmlArrayItem("list")]
-        public ListEntity[] Lists
+        [JsonPropertyName("lists")]
+        [JsonConverter(typeof(DictionaryOrEmptyArrayConverter<ContactList>))]
+        //[JsonIgnore()]
+        public Dictionary<int, ContactList> Lists
         {
-            get { return this.lists; }
-            set { this.lists = value; }
+            get; set;
         }
 
         /// <summary>
         /// A collection of relation links. Will contain (at least) a link to
         /// the contact resource that this contact exists at.
         /// </summary>
-        [XmlArray("links")]
-        [XmlArrayItem("link")]
-        public RelationLink[] Links {
-            get { return this.links; }
-            set { this.links = value; }
+        [JsonPropertyName("links")]
+        public RelationLink[]? Links
+        {
+            get; set;
         }
 
         /// <summary>
@@ -109,13 +95,12 @@ namespace SimplyCast.ContactManager.Responses
         /// value, access the Value property.</returns>
         public List<FieldEntity> GetFieldsByName(string name)
         {
-            List<FieldEntity> returnFields = new List<FieldEntity>();
-
-            for (int i = 0; i < this.fields.Length; i++)
+            List<FieldEntity> returnFields = new();
+            foreach (var kv in Fields)
             {
-                if (this.fields[i].Name == name)
+                if (kv.Value.Name == name)
                 {
-                    returnFields.Add(this.fields[i]);
+                    returnFields.Add(kv.Value);
                 }
             }
 

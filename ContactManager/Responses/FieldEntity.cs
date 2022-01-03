@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Xml.Serialization;
 
 namespace SimplyCast.ContactManager.Responses
@@ -18,49 +19,38 @@ namespace SimplyCast.ContactManager.Responses
     /// on a column in the Contact Manager, storing information about a
     /// particular contact. For convenience, many of the column attributes are
     /// provided in the entity representation.
-    /// </summary>
-    [XmlRoot(ElementName = "field")]
+    /// </summary>    
     public class FieldEntity
     {
-        #region Private Members
-        private string id;
-        private string value;
-        private string name;
-        private int userDefined;
-        private int visible;
-        private int editable;
-        private int extended;
-        #endregion
-
         /// <summary>
         /// The unique identifier of the column that the field is associated 
         /// with.
         /// </summary>
-        [XmlAttribute("id")]
+        [JsonPropertyName("id")]
         public string ID
         {
-            get { return this.id; }
-            set { this.id = value; }
+            get;
+            set;
         }
 
         /// <summary>
         /// The value on the field (an email address or name, for example).
         /// </summary>
-        [XmlElement("value")]
+        [JsonPropertyName("value")]
         public string Value
         {
-            get { return this.value; }
-            set { this.value = value; }
+            get;
+            set;
         }
 
         /// <summary>
         /// The name of the column assoctiated with the field.
         /// </summary>
-        [XmlElement("name")]
+        [JsonPropertyName("name")]
         public string Name
         {
-            get { return this.name; }
-            set { this.name = value; }
+            get;
+            set;
         }
 
         /// <summary>
@@ -69,18 +59,18 @@ namespace SimplyCast.ContactManager.Responses
         /// </summary>
         public bool IsUserDefined
         {
-            get { return this.userDefined == 0 ? false : true; }
+            get { return UserDefined != 0; }
         }
 
         /// <summary>
         /// An accessor for the raw userDefined value. Used only for XML 
         /// serialization.
         /// </summary>
-        [XmlAttribute("userDefined")]
+        [JsonPropertyName("userDefined")]
         public int UserDefined
         {
-            get { throw new Exception("Not Implemented"); }
-            set { this.userDefined = value; }
+            get;
+            set;
         }
 
         /// <summary>
@@ -88,18 +78,17 @@ namespace SimplyCast.ContactManager.Responses
         /// </summary>
         public bool IsVisible
         {
-            get { return this.visible == 0 ? false : true; }
+            get { return Visible != 0; }
         }
 
         /// <summary>
         /// An accessor for the raw visible value. Used only for XML
         /// serialization.
         /// </summary>
-        [XmlAttribute("visible")]
+        [JsonPropertyName("visible")]
         public int Visible
         {
-            get { throw new Exception("Not Implemented"); }
-            set { this.visible = value; }
+            get; set;
         }
 
         /// <summary>
@@ -107,18 +96,18 @@ namespace SimplyCast.ContactManager.Responses
         /// </summary>
         public bool IsEditable
         {
-            get { return this.editable == 0 ? false : true; }
+            get { return Editable == 0 ? false : true; }
         }
 
         /// <summary>
         /// An accessor for the raw editable value. Used only for XML
         /// serialization.
         /// </summary>
-        [XmlAttribute("editable")]
+        [JsonPropertyName("editable")]
         public int Editable
         {
-            get { throw new Exception("Not Implemented"); }
-            set { this.editable = value; }
+            get;
+            set;
         }
 
         /// <summary>
@@ -127,11 +116,11 @@ namespace SimplyCast.ContactManager.Responses
         /// information that may not be used. Extended fields can be optionally
         /// disabled in requests as a means to reduce overhead.
         /// </summary>
-        [XmlAttribute("extended")]
+        [JsonPropertyName("extended")]
         public int Extended
         {
-            get { throw new Exception("Not Implemented"); }
-            set { this.extended = value; }
+            get;
+            set;
         }
 
         /// <summary>
@@ -142,7 +131,7 @@ namespace SimplyCast.ContactManager.Responses
         /// </summary>
         public bool IsExtended
         {
-            get { return this.extended == 0 ? false : true; }
+            get { return Extended != 0; }
         }
     }
 }

@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Xml.Serialization;
 using SimplyCast.Common.Responses;
 
@@ -18,19 +19,16 @@ namespace SimplyCast.ContactManager.Responses
     /// This class contains a collection of contact entity representations
     /// and fully supports XML serialization.
     /// </summary>
-    [XmlRoot(ElementName = "contacts")]
     public class ContactCollection : GenericCollection
     {
-        private ContactEntity[] contacts;
 
         /// <summary>
         /// A collection of contact entity representations.
         /// </summary>
-        [XmlElement("contact")]
+        [JsonPropertyName("contacts")]
         public ContactEntity[] Contacts
         {
-            get { return this.contacts; }
-            set { this.contacts = value; }
+            get; set;
         }
     }
 }
